@@ -1,4 +1,5 @@
 from django.db import models
+from django.utils import timezone
 
 # Create your models here.
 class Departamento(models.Model):
@@ -82,7 +83,7 @@ class Activos(models.Model):
     modelo = models.ForeignKey(Modelo, on_delete=models.CASCADE, null=True, blank=True)
     depreciacion = models.ForeignKey(Depreciacion, on_delete=models.CASCADE, null=True, blank=True)
     ubicacion = models.ForeignKey(Ubicacion, on_delete=models.CASCADE, null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
