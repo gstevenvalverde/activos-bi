@@ -2,7 +2,7 @@ from django.db import models
 from django.utils import timezone
 
 # Create your models here.
-class Departamento(models.Model):
+""" class Departamento(models.Model):
     nombre = models.CharField(max_length=50, null=False, unique=True,verbose_name="Nombre")
     descripcion = models.CharField(max_length=255, verbose_name="Descripción")
     created_at = models.DateTimeField(auto_now_add=True)
@@ -68,23 +68,30 @@ class Persona(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return self.nombre
+        return self.nombre """
     
 class Activos(models.Model):
+    
+     
+    id = models.CharField(max_length=100,auto_created=False, primary_key=True, verbose_name="ID")
     nombre = models.CharField(max_length=100, null=False,verbose_name="Nombre")
     serial = models.CharField(max_length=50, verbose_name="Serial")
-    estado = models.CharField(max_length=20, verbose_name="Estado")
-    ultimaAsignacion = models.DateField(verbose_name="Ultima Asignación")
-    ultimaDesignacion = models.DateField(verbose_name="Ultima Designación")
-    fechaCompra = models.DateField(verbose_name="Fecha de Compra")
-    valorCompra = models.FloatField(verbose_name="Valor de Compra")
-    valorActual = models.FloatField(verbose_name="Valor Actual")
-    persona = models.ForeignKey(Persona, on_delete=models.CASCADE, null=True, blank=True)
-    modelo = models.ForeignKey(Modelo, on_delete=models.CASCADE, null=True, blank=True)
-    depreciacion = models.ForeignKey(Depreciacion, on_delete=models.CASCADE, null=True, blank=True)
-    ubicacion = models.ForeignKey(Ubicacion, on_delete=models.CASCADE, null=True, blank=True)
-    created_at = models.DateTimeField(default=timezone.now)
-    updated_at = models.DateTimeField(auto_now=True)
+    estado = models.CharField(max_length=50, verbose_name="Estado")
+    etiqueta = models.CharField(max_length=50, verbose_name="Etiqueta")
+    ultimaAsignacion = models.CharField(max_length=100, verbose_name="Ultima Asignación")
+    ultimaDesasignacion = models.CharField(max_length=100, verbose_name="Ultima Designación")
+    fechaCompra = models.CharField(max_length=100, verbose_name="Fecha de Compra")
+    valorCompra = models.CharField(max_length=100,verbose_name="Valor de Compra")
+    valorActual = models.CharField(max_length=100,verbose_name="Valor Actual")
+    persona = models.CharField(max_length=100, null=False,verbose_name="Persona")
+    modelo =models.CharField(max_length=100, null=False,verbose_name="Modelo")
+    depreciacion = models.CharField(max_length=100, null=False,verbose_name="Depreciacion")
+    ubicacion = models.CharField(max_length=100, null=False,verbose_name="Ubicacion")
+    categoria = models.CharField(max_length=100, null=False,verbose_name="Categoria")
+    fabricante = models.CharField(max_length=100, null=False,verbose_name="Fabricante")
+
+    
+
 
     def __str__(self):
         return self.nombre

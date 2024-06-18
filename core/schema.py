@@ -1,243 +1,97 @@
+from itertools import count
 import graphene
 from graphene_django import DjangoObjectType
-from activos.models import Departamento, Depreciacion, Ubicacion, Fabricante, Categoria, Modelo, Persona, Activos 
+from activos.models import Activos 
+from django.db.models import Count
+from django.db.models import Sum
 
-class DepartamentoType(DjangoObjectType):
-    class Meta:
-        model = Departamento
-        fields = ("id", "nombre", "descripcion") 
-
-class DepreciacionType(DjangoObjectType):
-    class Meta:
-        model = Depreciacion
-        fields = ("id", "nombre", "meses", "valorMinimo") 
-
-class UbicacionType(DjangoObjectType):
-    class Meta:
-        model = Ubicacion
-        fields = ("id", "nombre", "direccion")
-
-class FabricanteType(DjangoObjectType):
-    class Meta:
-        model = Fabricante
-        fields = ("id", "nombre", "descripcion") 
-
-class CategoriaType(DjangoObjectType):
-    class Meta:
-        model = Categoria
-        fields = ("id", "nombre", "descripcion")  
-
-class ModeloType(DjangoObjectType):
-    class Meta:
-        model = Modelo
-        fields = ("id", "nombre", "fabricante", "Categoria")
-
-class PersonaType(DjangoObjectType):
-    class Meta:
-        model = Persona
-        fields = ("id", "nombre", "email", "telefono", "ci","departamento")
 
 class ActivoType(DjangoObjectType):
     class Meta:
         model = Activos
-        fields = ("nombre", "serial", "estado", "fechaCompra", "valorCompra", "valorActual", "persona", "modelo", "depreciacion", "ubicacion") 
+        fields = ("nombre", "serial", "estado", "fechaCompra", "valorCompra", "valorActual", "persona", "modelo", "depreciacion", "ubicacion","categoria", "fabricante", "etiqueta", "ultimaAsignacion", "ultimaDesasignacion") 
 
-class CreateDepartamentoMutation(graphene.Mutation):
-    # Inputs que espera recibir
-    class Arguments:
-        nombre = graphene.String()
-        descripcion = graphene.String()
-
-    departamento = graphene.Field(DepartamentoType)
-
-    # Datos que espera devolver
-    def mutate(self, info, nombre, descripcion):
-        departamento = Departamento(nombre = nombre, descripcion = descripcion)
-        departamento.save()
-        return CreateDepartamentoMutation(departamento = departamento)
+class CategoriaCount(graphene.ObjectType):
+    name = graphene.String()
+    y = graphene.Int()
+    drilldown = graphene.String()
     
-class CreateDepreciacionMutation(graphene.Mutation):
-    # Inputs que espera recibir
-    class Arguments:
-        nombre = graphene.String()
-        meses = graphene.Int()
-        valorMinimo = graphene.Float()
-
-    depreciacion = graphene.Field(DepreciacionType)
-
-    # Datos que espera devolver
-    def mutate(self, info, nombre, meses, valorMinimo):
-        depreciacion = Depreciacion(nombre = nombre, meses = meses, valorMinimo = valorMinimo)
-        depreciacion.save()
-        return CreateDepreciacionMutation(depreciacion = depreciacion)
     
-class CreateUbicacionMutation(graphene.Mutation):
-    # Inputs que espera recibir
-    class Arguments:
-        nombre = graphene.String()
-        direccion = graphene.String()
+# Define un objeto GraphQL para representar cada activo con su cantidad en una categoría
+class ActivoCantidad(graphene.ObjectType):
+    name = graphene.String()
+    cantidad = graphene.Int()
 
-    Ubicacion = graphene.Field(UbicacionType)
-
-    # Datos que espera devolver
-    def mutate(self, info, nombre, direccion):
-        ubicacion = Ubicacion(nombre = nombre, direccion = direccion)
-        ubicacion.save()
-        return CreateUbicacionMutation(ubicacion = ubicacion)
+# Define un objeto GraphQL para representar cada categoría con sus activos y cantidades
+class CategoriaActivos(graphene.ObjectType):
+    id = graphene.String()
+    name = graphene.String()
+    type = graphene.String()
+    data = graphene.List(graphene.List(graphene.String, graphene.Int))
     
-class CreateFabricanteMutation(graphene.Mutation):
-    # Inputs que espera recibir
-    class Arguments:
-        nombre = graphene.String()
-        descripcion = graphene.String()
-
-    fabricante = graphene.Field(FabricanteType)
-
-    # Datos que espera devolver
-    def mutate(self, info, nombre, descripcion):
-        fabricante = Fabricante(nombre = nombre, descripcion = descripcion)
-        fabricante.save()
-        return CreateFabricanteMutation(fabricante = fabricante)
     
-class CreateCategoriaMutation(graphene.Mutation):
-    # Inputs que espera recibir
-    class Arguments:
-        nombre = graphene.String()
-        descripcion = graphene.String()
-
-    categoria = graphene.Field(CategoriaType)
-
-    # Datos que espera devolver
-    def mutate(self, info, nombre, descripcion):
-        categoria = Categoria(nombre = nombre, descripcion = descripcion)
-        categoria.save()
-        return CreateCategoriaMutation(categoria = categoria)
+class PersonaCantidadActivos(graphene.ObjectType):
+    name = graphene.String()
+    y = graphene.Int()
+    drilldown = graphene.String()
     
-class FabricanteInput(graphene.InputObjectType):
-    id = graphene.ID(required=True)
-    nombre = graphene.String()
-    descripcion = graphene.String()
-
-class CategoriaInput(graphene.InputObjectType):
-    id = graphene.ID(required=True)
-    nombre = graphene.String()
-    descripcion = graphene.String()
-
-class CreateModeloMutation(graphene.Mutation):
-    # Inputs que espera recibir
-    class Arguments:
-        nombre = graphene.String(required=True)
-        fabricante = graphene.Argument(FabricanteInput, required=True)
-        categoria = graphene.Argument(CategoriaInput, required=True)
-
-    modelo = graphene.Field(ModeloType)
-
-    def mutate(self, info, nombre, fabricante, categoria):
-        fabricante_instance = Fabricante.objects.create(**fabricante)
-        categoria_instance = Categoria.objects.create(**categoria)
-
-        modelo = Modelo.objects.create(nombre=nombre, fabricante=fabricante_instance, categoria=categoria_instance)
-
-        return CreateModeloMutation(modelo=modelo)
-
-class DepartamentoInput(graphene.InputObjectType):
-    id = graphene.ID(required=True)
-    nombre = graphene.String()
-    descripcion = graphene.String()
-
-class CreatePersonaMutation(graphene.Mutation):
-    # Inputs que espera recibir
-    class Arguments:
-        ci = graphene.String(required=True)
-        departamento = graphene.Argument(DepartamentoInput, required=True)
-        email = graphene.String(required=True)
-        nombre = graphene.String(required=True)
-        telefono = graphene.String(required=True)
-
-    persona = graphene.Field(PersonaType)
-
-    def mutate(self, info, ci, departamento, email, nombre, telefono):
-        departamento_instance, _ = Departamento.objects.update_or_create(id=departamento.id, defaults=departamento.__dict__)
-
-        persona = Persona.objects.create(ci=ci, departamento=departamento_instance, email=email, nombre=nombre, telefono=telefono)
-
-        return CreatePersonaMutation(persona=persona)
-
-class PersonaInput(graphene.InputObjectType):
-    ci = graphene.String()
-    departamento = graphene.String()
-    email = graphene.String()
-    id = graphene.ID(required=True)
-    nombre = graphene.String()
-    telefono = graphene.String()
-
-class DepreciacionInput(graphene.InputObjectType):
-    id = graphene.ID(required=True)
-    meses = graphene.String()
-    nombre = graphene.String()
-    valor_minimo = graphene.Float()
-
-class CategoriaInput(graphene.InputObjectType):
-    descripcion = graphene.String()
-    id = graphene.ID(required=True)
-    nombre = graphene.String()
-
-class FabricanteInput(graphene.InputObjectType):
-    descripcion = graphene.String()
-    id = graphene.ID(required=True)
-    nombre = graphene.String()
-
-class ModeloInput(graphene.InputObjectType):
-    categoria = graphene.Argument(CategoriaInput, required=True)
-    fabricante = graphene.Argument(FabricanteInput, required=True)
-    id = graphene.ID(required=True)
-    nombre = graphene.String()
-
-class UbicacionInput(graphene.InputObjectType):
-    direccion = graphene.String()
-    id = graphene.ID(required=True)
-    nombre = graphene.String()
+class ModeloCantPersonas(graphene.ObjectType):
+    name = graphene.String()
+    y = graphene.Int()
+    drilldown = graphene.String()
+    
+class Estadisticas(graphene.ObjectType):
+    total_personas = graphene.Int()
+    total_activos = graphene.Int()
+    total_modelos = graphene.Int()
+    
+class TotalValoresPorModeloType(graphene.ObjectType):
+    modelo = graphene.String()
+    valorCompraTotal = graphene.Float()
+    valorActualTotal = graphene.Float()
 
 class ActivoInput(graphene.InputObjectType):
-    persona = graphene.Argument(PersonaInput, required=True)
-    depreciacion = graphene.Argument(DepreciacionInput, required=True)
-    estado = graphene.String(required=True)
-    etiqueta = graphene.String(required=True)
-    fecha_compra = graphene.String(required=True)
+    persona = graphene.String(required=False)
+    depreciacion = graphene.String(required=False)
+    categoria = graphene.String(required=False)
+    fabricante = graphene.String(required=False)
+    estado = graphene.String(required=False)
+    etiqueta = graphene.String(required=False)
+    fechaCompra = graphene.String(required=False)
     id = graphene.ID()
-    image = graphene.String(required=True)
-    modelo = graphene.Argument(ModeloInput, required=True)
-    nombre = graphene.String(required=True)
-    serial = graphene.String(required=True)
-    ubicacion = graphene.Argument(UbicacionInput, required=True)
-    ultima_asignacion = graphene.String(required=True)
-    ultima_desasignacion = graphene.String(required=True)
-    valor_actual = graphene.Float(required=True)
-    valor_compra = graphene.Float(required=True)
+    modelo = graphene.String(required=False)
+    nombre = graphene.String(required=False)
+    serial = graphene.String(required=False)
+    ubicacion = graphene.String(required=False)
+    ultimaAsignacion = graphene.String(required=False)
+    ultimaDesasignacion = graphene.String(required=False)
+    valorActual = graphene.String(required=False)
+    valorCompra = graphene.String(required=False)
 
 class CreateActivosMutation(graphene.Mutation):
     # Inputs que espera recibir
     class Arguments:
-        activo = graphene.Argument(ActivoInput, required=True)
+        activo = graphene.Argument(ActivoInput, required=False)
 
-    persona = graphene.Field(PersonaType)
-    depreciacion = graphene.Field(DepreciacionType)
+    persona = graphene.String()
+    depreciacion = graphene.String()
     estado = graphene.String()
     etiqueta = graphene.String()
-    fecha_compra = graphene.String()
+    fechaCompra = graphene.String()
     id = graphene.ID()
-    image = graphene.String()
-    modelo = graphene.Field(ModeloType)
+    modelo = graphene.String()
     nombre = graphene.String()
     serial = graphene.String()
-    ubicacion = graphene.Field(UbicacionType)
-    ultima_asignacion = graphene.String()
-    ultima_desasignacion = graphene.String()
-    valor_actual = graphene.Float()
-    valor_compra = graphene.Float()
+    ubicacion = graphene.String()
+    categoria = graphene.String()
+    fabricante = graphene.String()
+    ultimaAsignacion = graphene.String()
+    ultimaDesasignacion = graphene.String()
+    valorActual = graphene.String()
+    valorCompra = graphene.String()
 
     def mutate(self, info, activo):
-        persona_data = activo.pop('persona', None)
+        """ persona_data = activo.pop('persona', None)
         depreciacion_data = activo.pop('depreciacion', None)
         modelo_data = activo.pop('modelo', None)
         ubicacion_data = activo.pop('ubicacion', None)
@@ -245,164 +99,36 @@ class CreateActivosMutation(graphene.Mutation):
         persona_instance = Persona.objects.create(**persona_data)
         depreciacion_instance = Depreciacion.objects.create(**depreciacion_data)
         modelo_instance = Modelo.objects.create(**modelo_data)
-        ubicacion_instance = Ubicacion.objects.create(**ubicacion_data)
+        ubicacion_instance = Ubicacion.objects.create(**ubicacion_data) """
 
         activo_instance = Activos.objects.create(
-            persona=persona_instance,
-            depreciacion=depreciacion_instance,
-            modelo=modelo_instance,
-            ubicacion=ubicacion_instance,
             **activo
         )
 
         return CreateActivosMutation(
-            persona=persona_instance,
-            depreciacion=depreciacion_instance,
+            persona=activo_instance.persona,
+            depreciacion=activo_instance.depreciacion,
             estado=activo_instance.estado,
             etiqueta=activo_instance.etiqueta,
-            fecha_compra=activo_instance.fecha_compra,
+            fechaCompra=activo_instance.fechaCompra,
             id=activo_instance.id,
-            image=activo_instance.image,
-            modelo=modelo_instance,
+            modelo=activo_instance.modelo,
             nombre=activo_instance.nombre,
             serial=activo_instance.serial,
-            ubicacion=ubicacion_instance,
-            ultima_asignacion=activo_instance.ultima_asignacion,
-            ultima_desasignacion=activo_instance.ultima_desasignacion,
-            valor_actual=activo_instance.valor_actual,
-            valor_compra=activo_instance.valor_compra,
+            ubicacion=activo_instance.ubicacion,
+            categoria=activo_instance.categoria,
+            fabricante=activo_instance.fabricante,
+            ultimaAsignacion=activo_instance.ultimaAsignacion,
+            ultimaDesasignacion=activo_instance.ultimaDesasignacion,
+            valorActual=activo_instance.valorActual,
+            valorCompra=activo_instance.valorCompra,
         )
     
-class UpdateDepartamentoMutation(graphene.Mutation):
-    # Inputs que espera recibir
-    class Arguments:
-        id = graphene.ID(required = True)
-        nombre = graphene.String()
-        descripcion = graphene.String()
 
-    departamento = graphene.Field(DepartamentoType)
 
-    # Datos que espera devolver
-    def mutate(self, info, id, nombre, descripcion):
-        departamento = Departamento.objects.get(pk = id)
-        departamento.nombre = nombre
-        departamento.descripcion = descripcion
-        departamento.save()
-        return UpdateDepartamentoMutation(departamento = departamento)
 
-class UpdateDepreciacionMutation(graphene.Mutation):
-    # Inputs que espera recibir
-    class Arguments:
-        id = graphene.ID(required = True)
-        nombre = graphene.String()
-        meses = graphene.Int()
-        valorMinimo = graphene.Float()
-
-    depreciacion = graphene.Field(DepreciacionType)
-
-    # Datos que espera devolver
-    def mutate(self, info, id, nombre, meses, valorMinimo):
-        depreciacion = Depreciacion.objects.get(pk = id)
-        depreciacion.nombre = nombre
-        depreciacion.meses = meses
-        depreciacion.valorMinimo = valorMinimo
-        depreciacion.save()
-        return UpdateDepreciacionMutation(depreciacion = depreciacion)
     
-class UpdateUbicacionMutation(graphene.Mutation):
-    # Inputs que espera recibir
-    class Arguments:
-        id = graphene.ID(required = True)
-        nombre = graphene.String()
-        direccion = graphene.String()
-
-    Ubicacion = graphene.Field(UbicacionType)
-
-    # Datos que espera devolver
-    def mutate(self, info, id, nombre, direccion):
-        ubicacion = Ubicacion.objects.get(pk = id)
-        ubicacion.nombre = nombre
-        ubicacion.direccion = direccion
-        ubicacion.save()
-        return UpdateUbicacionMutation(ubicacion = ubicacion)
-
-class UpdateFabricanteMutation(graphene.Mutation):
-    # Inputs que espera recibir
-    class Arguments:
-        id = graphene.ID(required = True)
-        nombre = graphene.String()
-        descripcion = graphene.String()
-
-    fabricante = graphene.Field(FabricanteType)
-
-    # Datos que espera devolver
-    def mutate(self, info, id, nombre, descripcion):
-        fabricante = Fabricante.objects.get(pk = id)
-        fabricante.nombre = nombre
-        fabricante.descripcion = descripcion
-        fabricante.save()
-        return UpdateFabricanteMutation(fabricante = fabricante)
-    
-class UpdateCategoriaMutation(graphene.Mutation):
-    # Inputs que espera recibir
-    class Arguments:
-        id = graphene.ID(required = True)
-        nombre = graphene.String()
-        descripcion = graphene.String()
-
-    categoria = graphene.Field(CategoriaType)
-
-    # Datos que espera devolver
-    def mutate(self, info, id, nombre, descripcion):
-        categoria = Categoria.objects.get(pk = id)
-        categoria.nombre = nombre
-        categoria.descripcion = descripcion
-        categoria.save()
-        return UpdateCategoriaMutation(categoria = categoria)
-    
-class UpdateModeloMutation(graphene.Mutation):
-    # Inputs que espera recibir
-    class Arguments:
-        id = graphene.ID(required = True)
-        nombre = graphene.String()
-        fabricante = graphene.Int()
-        Categoria = graphene.Int()
-
-    modelo = graphene.Field(ModeloType)
-
-    # Datos que espera devolver
-    def mutate(self, info, nombre, fabricante, categoria):
-        modelo = Modelo.objects.get(pk = id)
-        modelo.nombre = nombre
-        modelo.fabricante = fabricante
-        modelo.Categoria = categoria
-        modelo.save()
-        return UpdateModeloMutation(modelo = modelo)
-    
-class UpdatePersonaMutation(graphene.Mutation):
-    # Inputs que espera recibir
-    class Arguments:
-        id = graphene.ID(required = True)
-        nombre = graphene.String()
-        email = graphene.String()
-        telefono = graphene.String()
-        departamento = graphene.Int()
-        ci = graphene.String()
-
-    persona = graphene.Field(PersonaType)
-
-    # Datos que espera devolver
-    def mutate(self, info, id, nombre, email, telefono, departamento, ci):
-        persona = Persona.objects.get(pk = id)
-        persona.nombre = nombre
-        persona.email = email
-        persona.telefono = telefono
-        persona.departamento = departamento
-        persona.ci = ci
-        persona.save()
-        return UpdatePersonaMutation(persona = persona)
-    
-class UpdateActivosMutation(graphene.Mutation):
+""" class UpdateActivosMutation(graphene.Mutation):
     # Inputs que espera recibir
     class Arguments:
         id = graphene.ID(required = True)
@@ -437,60 +163,101 @@ class UpdateActivosMutation(graphene.Mutation):
         activo.depreciacion = depreciacion
         activo.ubicacion = ubicacion
         activo.save()
-        return UpdateActivosMutation(activo = activo)
+        return UpdateActivosMutation(activo = activo) """
 
 class Query(graphene.ObjectType):
-    hello = graphene.String(default_value="Hello!!!")
-    departamentos = graphene.List(DepartamentoType)
-    depreciaciones = graphene.List(DepreciacionType)
-    ubicaciones = graphene.List(UbicacionType)
-    fabricantes = graphene.List(FabricanteType)
-    categorias = graphene.List(CategoriaType)
-    modelos = graphene.List(ModeloType)
-    personas = graphene.List(PersonaType)
+   
     activos = graphene.List(ActivoType)
-
-    def resolve_departamentos(self, info):
-        return Departamento.objects.all()
     
-    def resolve_depreciaciones(self, info):
-        return Depreciacion.objects.all()
+    categorias_con_activos = graphene.List(CategoriaCount)
     
-    def resolve_ubicaciones(self, info):
-        return Ubicacion.objects.all()
+    categoria_activos = graphene.List(CategoriaActivos)
     
-    def resolve_fabricantes(self, info):
-        return Fabricante.objects.all()
+    personas_cantidad_activos = graphene.List(PersonaCantidadActivos)
     
-    def resolve_categorias(self, info):
-        return Categoria.objects.all()
+    modelos_cantidad_personas = graphene.List(ModeloCantPersonas)
     
-    def resolve_modelos(self, info):
-        return Modelo.objects.all()
+    estadisticas = graphene.Field(Estadisticas)
     
-    def resolve_personas(self, info):
-        return Persona.objects.all()
-    
+    total_valores_por_modelo = graphene.List(TotalValoresPorModeloType)
     def resolve_activos(self, info):
         return Activos.objects.all()
+    
+    def resolve_categorias_con_activos(self, info):
+        categorias = Activos.objects.values('categoria').annotate(count=Count('categoria'))
+        result = []
+        for categoria in categorias:
+            result.append({
+                'name': categoria['categoria'],
+                'y': categoria['count'],
+                'drilldown': categoria['categoria']  # Opcional: Convertir el nombre a minúsculas
+            })
+        return result
+    
+    def resolve_categoria_activos(self, info):
+        # Realiza la consulta a la base de datos para agrupar los activos por categoría y nombre de activo
+        categorias = Activos.objects.values('categoria').annotate(
+            activos_data=Count('nombre')
+        )
+
+        # Preparar la estructura de datos para cada categoría
+        resultado = []
+        for categoria in categorias:
+            activos_en_categoria = Activos.objects.filter(categoria=categoria['categoria']).values('nombre').annotate(
+                cantidad=Count('id')
+            )
+            activos_data = [[activo['nombre'],  int(activo['cantidad'])] for activo in activos_en_categoria]
+            resultado.append(CategoriaActivos(
+                id=categoria['categoria'],
+                name="cantidad",
+                type="column",
+                data=activos_data
+            ))
+
+        return resultado
+    
+
+    def resolve_personas_cantidad_activos(self, info):
+        activos_por_persona = Activos.objects.values('persona').annotate(cantidad=Count('id'))
+        return [
+            PersonaCantidadActivos(name=activo['persona'], y=activo['cantidad'], drilldown=activo['persona'])
+            for activo in activos_por_persona
+        ]
+    
+    def resolve_modelos_cantidad_personas(self, info):
+        activos_por_modelo = Activos.objects.values('modelo').annotate(cantidad=Count('persona', distinct=True))
+        return [
+            ModeloCantPersonas(name=activo['modelo'], y=activo['cantidad'], drilldown=activo['modelo'])
+            for activo in activos_por_modelo
+        ]
+        
+    def resolve_estadisticas(self, info):
+        total_personas = Activos.objects.values('persona').distinct().count()
+        total_activos = Activos.objects.count()
+        total_modelos = Activos.objects.values('modelo').distinct().count()
+        return Estadisticas(
+            total_personas=total_personas,
+            total_activos=total_activos,
+            total_modelos=total_modelos
+        )
+        
+    def resolve_total_valores_por_modelo(self, info):
+        from django.db.models import F
+        resultados = Activos.objects.values('modelo').annotate(
+            valorCompraTotal=Sum(F('valorCompra')),
+            valorActualTotal=Sum(F('valorActual'))
+        )
+        return [
+            TotalValoresPorModeloType(
+                modelo=result['modelo'],
+                valorCompraTotal=result['valorCompraTotal'],
+                valorActualTotal=result['valorActualTotal']
+            ) for result in resultados
+        ]
 
 class Mutation(graphene.ObjectType):
-    create_departamento = CreateDepartamentoMutation.Field()
-    create_depreciacion = CreateDepreciacionMutation.Field()
-    create_ubicacion = CreateUbicacionMutation.Field()
-    create_fabricante = CreateFabricanteMutation.Field()
-    create_categoria = CreateCategoriaMutation.Field()
-    create_modelo = CreateModeloMutation.Field()
-    create_persona = CreatePersonaMutation.Field()
+    """ update_activo = UpdateActivosMutation.Field() """
     create_activo = CreateActivosMutation.Field()
-    update_departamento = UpdateDepartamentoMutation.Field()
-    update_depreciacion = UpdateDepreciacionMutation.Field()
-    update_ubicacion = UpdateUbicacionMutation.Field()
-    update_fabricante = UpdateFabricanteMutation.Field()
-    update_categoria = UpdateCategoriaMutation.Field()
-    update_modelo = UpdateModeloMutation.Field()
-    update_persona = UpdatePersonaMutation.Field()
-    update_activo = UpdateActivosMutation.Field()
     
 
 
