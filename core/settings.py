@@ -89,9 +89,9 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'railway',
         'USER': 'root',
-        'PASSWORD': 'hsmGdDLHJPDxWouzjwmioSkWIeuLfbcK',
+        'PASSWORD': 'PdfyPKvLdBaPTKhsnycsGdDerOSoPYPZ',
         'HOST': 'monorail.proxy.rlwy.net',  # Por lo general, 'localhost' o la dirección IP del servidor de base de datos
-        'PORT': '23779',     # El puerto por defecto de MySQL es 3306
+        'PORT': '49243',     # El puerto por defecto de MySQL es 3306
     }
 }
 

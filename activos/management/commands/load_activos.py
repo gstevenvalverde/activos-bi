@@ -2,7 +2,7 @@ import requests
 from activos.models import Activos
 
 def fetch_activos_from_api():
-    url = "http://3.129.58.104:8080/graphql"
+    url = "http://18.191.146.66:8080/graphql"
     query = """
     {
        allActivos {
@@ -44,7 +44,9 @@ def fetch_activos_from_api():
         raise Exception(f"Query failed with status code {response.status_code}")
 
 def load_activos():
-
+    
+    Activos.objects.all().delete()
+    
     activos_data = fetch_activos_from_api()
     objetos_activos = []
     for activo in activos_data:
